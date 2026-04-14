@@ -1,0 +1,40 @@
+name: Copilot System Health Check
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Copilot subscription
+        run: |
+          echo "=== Copilot Subscription ==="
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/copilot_billing/seats || echo "Need admin token"
+      - name: Check forked repos
+        run: |
+          echo "=== Forked Repos ==="
+          for repo in github-mcp-server copilot-sdk awesome-copilot github-copilot-configs; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://api.github.com/repos/icanforyouthebest-bot/$repo)
+            echo "$repo: $STATUS"
+          done
+      - name: Check MCP server image
+        run: |
+          echo "=== MCP Docker ==="
+          docker pull ghcr.io/github/github-mcp-server:latest && echo "OK" || echo "FAIL"
+      - name: Verify workflow files
+        run: |
+          echo "=== Workflow Files ==="
+          ls -la .github/workflows/
+          echo "=== Scripts ==="
+          ls -la scripts/ || echo "No scripts dir"
+      - name: Anti-idle check
+        run: |
+          echo "=== Last Commit ==="
+          git log -1 --format="%H %ai %s"
+          DAYS=$(( ($(date +%s) - $(git log -1 --format=%ct)) / 86400 ))
+          echo "Days since last commit: $DAYS"
+          if [ $DAYS -gt 7 ]; then echo "WARNING: repo idle >7 days"; fi
