@@ -1,0 +1,26 @@
+name: Health Check
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: MCP API
+        run: curl -sI https://api.githubcopilot.com/mcp/_ping
+      - name: Docker
+        run: docker pull ghcr.io/github/github-mcp-server:latest
+      - name: Repos
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for R in github-mcp-server copilot-sdk awesome-copilot github-copilot-configs; do
+            echo $R $(curl -s -o /dev/null -w '%{http_code}' https://api.github.com/repos/icanforyouthebest-bot/$R)
+          done
+      - name: SDK
+        run: npm view @github/copilot-sdk version || true
+      - name: Plan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: curl -sH 'Authorization: token $GH_TOKEN' https://api.github.com/user | jq .plan
