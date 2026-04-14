@@ -118,3 +118,39 @@ docker run -it --rm ghcr.io/github/github-mcp-server tool-search "issue" --max-r
 | Extensions | github.com/marketplace | Official |
 | MCP Registry | github.com/mcp | Official |
 | Skills Platform | skills.github.com | Official |
+
+
+## 獨立紅隊驗證條款 (Independent Red Team Verification)
+
+> 本系統必須通過獨立紅隊驗證，不信任任何自我回報結果。
+
+### 驗證項目
+
+| # | 檢查項目 | 驗證方式 | 通過條件 |
+|---|---------|---------|----------|
+| 1 | Fork Repo 存活 | curl raw.githubusercontent.com (bypass cache) | 全部 HTTP 200 |
+| 2 | Actions 執行記錄 | GitHub API /actions/runs | run_id 非 null |
+| 3 | SOP 合規條款 | grep "獨立紅隊" README.md | 存在 |
+| 4 | Workflow YAML | curl health-check.yml | HTTP 200 |
+| 5 | 驗證腳本完整 | curl verify.sh + redteam-verify.sh | HTTP 200 |
+
+### 執行方式
+
+```bash
+# 本地執行
+export GITHUB_TOKEN=ghp_xxxx
+export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
+export AUDIT_TOKEN=your_audit_token
+bash scripts/redteam-verify.sh
+
+# GitHub Actions 自動執行
+# 見 .github/workflows/redteam-verify.yml (每日 + 手動觸發)
+```
+
+### 審計軌跡
+
+- 驗證結果寫入 `https://aiforseo.vip/api/audit`
+- Slack 即時通知
+- GitHub Actions 日誌不可竄改
+
+> ⚠️ 任何驗證失敗 = 系統不合格，禁止上線
